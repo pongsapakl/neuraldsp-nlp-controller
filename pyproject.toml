@@ -5,6 +5,8 @@ description = "NLP-controlled tone engine for Neural DSP Archetype plugins"
 requires-python = ">=3.11"
 dependencies = [
     "pedalboard",
+    "pyyaml>=6.0.3",
+    "sentence-transformers>=5.3.0",
 ]
 
 [tool.hatch.build.targets.wheel]
