@@ -1,0 +1,15 @@
+[project]
+name = "neuraldsp-nlp-controller"
+version = "0.1.0"
+description = "NLP-controlled tone engine for Neural DSP Archetype plugins"
+requires-python = ">=3.11"
+dependencies = [
+    "pedalboard",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/neuraldsp_nlp_controller"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
