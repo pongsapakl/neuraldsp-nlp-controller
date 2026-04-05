@@ -9,6 +9,24 @@ You: "warm crunch with delay"
 → Guitar plays through it live
 ```
 
+## Why I Built This (Pain Points)
+
+This is a tool I built for myself, not a product pitched at anyone. The pain it scratches:
+
+**Neural DSP makes great-sounding amps, but getting to a good tone takes time.** Factory preset libraries have hundreds of entries with artisanal names ("The Amp Snob", "Ales Lagers and Barleywines") that tell you nothing about what they sound like. You either browse one-by-one, or you commit to tweaking knobs — both pull you out of playing.
+
+Presets are supposed to be the shortcut: click one, sound good immediately. That only works if you can find the right one in seconds. My goal was to keep the one-click promise but replace the browsing with natural-language search.
+
+### Three things this has to be
+
+1. **Fast** — type a few words, get a playable tone. No browsing, no loading screens beyond the initial plugin load.
+2. **Vast** — cover the full range of tones the plugin can produce, not a curated subset. If the preset library has it, the search should find it.
+3. **Easy** — sound good out of the box, no knob-twiddling required. If you *want* to tweak afterwards, the plugin UI is right there. But you shouldn't *have* to.
+
+Everything in this project is graded against those three. Coverage anchors were removed because they hurt Fast. LLM approaches were rejected because they hurt Easy (latency, determinism) and Fast. The refinement system exists because sometimes Easy means "nudge what's already playing" instead of "search again". The pain point I'm **not** solving is "make music for me" — I want to play the guitar, I just don't want to spend 20 minutes finding the right tone first.
+
+If those three things resonate, this might be useful to you too.
+
 ## How It Works
 
 1. **You describe a tone** in natural language

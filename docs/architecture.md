@@ -100,10 +100,10 @@ Factory preset files (.xml)
 Embeds text and anchor descriptions using `all-MiniLM-L6-v2` (sentence-transformers). Matching is pure cosine similarity — no LLM, no API calls.
 
 Key methods:
-- `query(text, top_k, plugin_name)` → top-K matches with scores
-- `match(text, top_k, sensitivity, plugin_name)` → blended CanonicalTone (for canonical path)
+- `query(text, top_k, plugin_name)` → top-K matches with scores and preset paths (used by V1 Clean app)
+- `match(text, top_k, sensitivity, plugin_name)` → blended CanonicalTone (kept for library consumers; unused in V1 Clean app, which blends at the raw-preset level via `preset_loader.blend_presets()`)
 
-Blending uses exponential-decay weighting: `weight = exp(-(1 - similarity) * sensitivity)`. Same algorithm as the 1P VST plugin.
+Blend weighting uses exponential decay: `weight = exp(-(1 - similarity))`.
 
 ### `canonical.py` — Canonical Schema
 
@@ -118,7 +118,7 @@ A 15-parameter, 0-1 normalized representation of a guitar tone:
 | Delay | active, time, feedback, mix |
 | Reverb | active, size, damping, mix |
 
-This schema is **not used for audio** — it's a semantic layer for NLP matching and a migration bridge for V2.
+This schema is **not used for audio rendering** — audio always goes through raw preset loading. Canonical is the substrate for two things only: (1) `anchor_builder._describe_tone()` turns canonical values into text for the anchor DB, and (2) `refinement.apply_delta()` operates in canonical space so delta commands can work identically across plugins.
 
 ### `adapter.py` — Plugin Adapter
 
@@ -156,8 +156,8 @@ Parses delta commands for stateful tone modification. Uses a dedicated refinemen
 Real-time audio streaming via pedalboard's `AudioStream`. Handles:
 - Audio device selection and streaming
 - Plugin loading/swapping (main-thread loader queue for VST3/Cocoa compatibility)
-- Text input → NLP query → result display
-- Top-5 selection, preset loading, blending
+- **Two separate textboxes**: search (always active) and refine (enabled only after a tone is loaded)
+- Top-5 selection, raw preset loading, raw preset blending
 
 ## Extension Points
 
