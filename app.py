@@ -23,6 +23,7 @@ from pedalboard.io import AudioStream
 
 from neuraldsp_nlp_controller.adapter import apply
 from neuraldsp_nlp_controller.nlp_engine import NLPEngine
+from neuraldsp_nlp_controller.preset_loader import discover_mapping, load_preset, blend_presets, list_factory_presets
 
 # ── Configuration ────────────────────────────────────────────────────
 
@@ -33,6 +34,11 @@ BUFFER_SIZE = 256
 AVAILABLE_PLUGINS = {
     "Archetype Tim Henson X": "/Library/Audio/Plug-Ins/VST3/Archetype Tim Henson X.vst3",
     "Archetype Cory Wong X": "/Library/Audio/Plug-Ins/VST3/Archetype Cory Wong X.vst3",
+}
+
+PRESET_DIRS = {
+    "Archetype Tim Henson X": "/Library/Audio/Presets/Neural DSP/Archetype Tim Henson X",
+    "Archetype Cory Wong X": "/Library/Audio/Presets/Neural DSP/Archetype Cory Wong X",
 }
 
 
@@ -89,6 +95,7 @@ class AppState:
         self.stream = None
         self.board = None
         self.engine = None
+        self.key_map: dict[str, str] | None = None
         self.current_tone = None
         self.last_results: list[dict] = []
         self.input_device = ""
@@ -119,6 +126,14 @@ def _start_stream(plugin_name: str, input_device: str, output_device: str) -> st
         return f"Failed to load {plugin_name}: {e}"
 
     try:
+        # Discover preset key mapping for raw preset loading
+        preset_dir = PRESET_DIRS.get(plugin_name, "")
+        presets = list_factory_presets(preset_dir) if preset_dir else []
+        if presets:
+            state.key_map = discover_mapping(plugin, presets[0])
+        else:
+            state.key_map = None
+
         state.plugin = plugin
         state.plugin_name = plugin_name
         state.input_device = input_device
@@ -150,6 +165,7 @@ def _stop_stream():
     state.stream = None
     state.plugin = None
     state.board = None
+    state.key_map = None
     state.current_tone = None
     state.last_results = []
 
@@ -185,7 +201,7 @@ def search_tone(text: str) -> tuple[str, str]:
 
 
 def apply_choice(choice: int) -> str:
-    """Apply a specific match from the last search results."""
+    """Apply a specific match by loading the raw factory preset (lossless)."""
     if state.plugin is None:
         return "No plugin loaded."
     if not state.last_results:
@@ -194,15 +210,27 @@ def apply_choice(choice: int) -> str:
         return f"Invalid choice: {choice+1}"
 
     result = state.last_results[choice]
+    preset_path = result.get("preset_path")
+
+    # Try raw preset loading first (lossless — all 170 params)
+    if preset_path and state.key_map and Path(preset_path).exists():
+        stats = load_preset(state.plugin, preset_path, state.key_map)
+        state.current_tone = None  # raw preset, no canonical representation
+        return (
+            f"Applied: {result['preset_name']} (raw preset, {stats['applied']} params)\n"
+            f"  Full factory preset loaded — all parameters preserved."
+        )
+
+    # Fallback to canonical if preset file not found
     from neuraldsp_nlp_controller.nlp_engine import _dict_to_tone
     tone = _dict_to_tone(result["tone"])
     tone.plugin_name = result["plugin_name"]
     tone.preset_name = result["preset_name"]
     state.current_tone = tone
 
-    stats = apply(state.plugin, tone)
+    apply(state.plugin, tone)
     return (
-        f"Applied: {result['preset_name']} (exact)\n"
+        f"Applied: {result['preset_name']} (canonical fallback)\n"
         f"  Amp: {tone.amp.character}  gain={tone.amp.gain:.2f}  "
         f"bass={tone.amp.bass:.2f}  mid={tone.amp.mid:.2f}  "
         f"treble={tone.amp.treble:.2f}\n"
@@ -211,24 +239,39 @@ def apply_choice(choice: int) -> str:
 
 
 def apply_blended() -> str:
-    """Apply interpolated blend of all search results."""
+    """Apply weighted blend of all search results using raw preset params."""
     if state.plugin is None:
         return "No plugin loaded."
     if not state.last_results:
         return "No search results. Search first."
 
-    from neuraldsp_nlp_controller.nlp_engine import _interpolate
-    tone = _interpolate(state.last_results, sensitivity=1.0)
-    state.current_tone = tone
+    import math
 
-    stats = apply(state.plugin, tone)
-    presets = ", ".join(r["preset_name"] for r in state.last_results[:3])
+    # Collect preset paths and compute weights (exponential decay by score)
+    preset_paths = []
+    weights = []
+    names = []
+    for r in state.last_results:
+        path = r.get("preset_path")
+        if path and state.key_map and Path(path).exists():
+            preset_paths.append(path)
+            weights.append(math.exp(-(1 - r["score"])))
+            names.append(r["preset_name"])
+
+    if not preset_paths:
+        # Fallback to canonical if no raw presets available
+        from neuraldsp_nlp_controller.nlp_engine import _interpolate
+        tone = _interpolate(state.last_results, sensitivity=1.0)
+        state.current_tone = tone
+        apply(state.plugin, tone)
+        return "Applied: canonical blend (no raw presets found)."
+
+    stats = blend_presets(state.plugin, preset_paths, weights, state.key_map)
+    state.current_tone = None  # raw blend, no canonical representation
+    presets_str = ", ".join(names[:3])
     return (
-        f"Applied: blended from {len(state.last_results)} matches ({presets}...)\n"
-        f"  Amp: {tone.amp.character}  gain={tone.amp.gain:.2f}  "
-        f"bass={tone.amp.bass:.2f}  mid={tone.amp.mid:.2f}  "
-        f"treble={tone.amp.treble:.2f}\n"
-        + _effects_line(tone)
+        f"Applied: raw blend from {len(preset_paths)} presets ({presets_str}...)\n"
+        f"  {stats['applied']} params blended, {stats['failed']} failed."
     )
 
 

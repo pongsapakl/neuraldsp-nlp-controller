@@ -468,6 +468,93 @@ def load_preset(plugin, preset_path: str | Path, key_map: dict[str, str]) -> dic
     return {'applied': applied, 'failed': failed, 'skipped': skipped, 'errors': errors}
 
 
+def blend_presets(
+    plugin,
+    preset_paths: list[str | Path],
+    weights: list[float],
+    key_map: dict[str, str],
+) -> dict:
+    """Blend multiple raw presets by weighted-averaging all parameters.
+
+    Numeric params (~150): weighted average across presets.
+    Bool/enum params (~20): taken from highest-weighted preset.
+
+    Args:
+        plugin: A pedalboard-loaded VST3Plugin instance.
+        preset_paths: Paths to factory preset files.
+        weights: Blend weights (same length as preset_paths), need not sum to 1.
+        key_map: Mapping from preset keys to pedalboard param names.
+
+    Returns:
+        Dict with keys: applied (int), failed (int), skipped (int).
+    """
+    # Normalize weights
+    total = sum(weights)
+    weights = [w / total for w in weights]
+
+    # Parse and resolve all presets
+    resolved_presets: list[dict[str, object]] = []
+    for path in preset_paths:
+        raw = parse_preset(str(path))
+        resolved: dict[str, object] = {}
+        for pk, pv in raw.items():
+            pb_name = key_map.get(pk)
+            if pb_name is None:
+                continue
+            val = resolve_value(pv, pb_name, plugin)
+            if val is not None:
+                resolved[pb_name] = val
+        resolved_presets.append(resolved)
+
+    # Collect all param names across presets
+    all_params: set[str] = set()
+    for rp in resolved_presets:
+        all_params.update(rp.keys())
+
+    # Blend
+    applied, failed, skipped = 0, 0, 0
+    top_idx = weights.index(max(weights))
+
+    for pb_name in all_params:
+        # Gather values that exist for this param
+        vals = []
+        ws = []
+        for i, rp in enumerate(resolved_presets):
+            if pb_name in rp:
+                vals.append(rp[pb_name])
+                ws.append(weights[i])
+
+        if not vals:
+            skipped += 1
+            continue
+
+        sample = vals[0]
+
+        if isinstance(sample, (int, float)) and not isinstance(sample, bool):
+            # Numeric: weighted average
+            w_total = sum(ws)
+            blended = sum(v * w for v, w in zip(vals, ws)) / w_total
+            # Clamp to param range
+            param = plugin.parameters[pb_name]
+            min_v, max_v = float(param.min_value), float(param.max_value)
+            blended = max(min_v, min(max_v, blended))
+        else:
+            # Bool/enum: take from highest-weighted preset that has this param
+            best_w, blended = -1.0, sample
+            for v, w in zip(vals, ws):
+                if w > best_w:
+                    best_w = w
+                    blended = v
+
+        try:
+            setattr(plugin, pb_name, blended)
+            applied += 1
+        except Exception:
+            failed += 1
+
+    return {'applied': applied, 'failed': failed, 'skipped': skipped}
+
+
 def get_preset_name(preset_path: str | Path) -> str:
     """Extract the human-readable name from a preset file path."""
     return Path(preset_path).stem
