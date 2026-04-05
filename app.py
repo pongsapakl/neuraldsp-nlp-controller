@@ -21,10 +21,10 @@ import gradio as gr
 from pedalboard import Pedalboard, load_plugin
 from pedalboard.io import AudioStream
 
-from neuraldsp_nlp_controller.adapter import apply, apply_delta
+from neuraldsp_nlp_controller.adapter import apply_delta
 from neuraldsp_nlp_controller.nlp_engine import NLPEngine
 from neuraldsp_nlp_controller.preset_loader import discover_mapping, load_preset, blend_presets, list_factory_presets
-from neuraldsp_nlp_controller.refinement import is_refinement, parse_deltas
+from neuraldsp_nlp_controller.refinement import parse_deltas, recognized_keywords
 
 # ── Configuration ────────────────────────────────────────────────────
 
@@ -99,6 +99,7 @@ class AppState:
         self.key_map: dict[str, str] | None = None
         self.current_tone = None
         self.last_results: list[dict] = []
+        self.tone_loaded = False  # True after a tone is applied; enables refine
         self.input_device = ""
         self.output_device = ""
 
@@ -177,30 +178,16 @@ def switch_plugin(plugin_name: str, input_device: str, output_device: str) -> st
 
 
 def search_tone(text: str) -> tuple[str, str]:
-    """Search for matching tones, or apply refinement if detected.
+    """Search the anchor database for matching tones.
 
-    Refinement commands ("less fizzy", "brighter") adjust the current tone.
-    New descriptions ("warm blues crunch") search the anchor database.
+    New-search resets refinement state (any loaded tone is still audible, but
+    the refine box starts fresh against whatever the user applies next).
     """
     if state.plugin is None:
         return "No plugin loaded.", ""
     if not text.strip():
         return "Enter a tone description.", ""
 
-    # Check if this is a refinement command
-    if is_refinement(text):
-        deltas = parse_deltas(text)
-        if not deltas:
-            return f"Couldn't parse refinement: '{text}'. Try 'more/less [term]'.", ""
-        stats = apply_delta(state.plugin, deltas)
-        lines = [f"Refined: {text}"]
-        for change in stats["changes"]:
-            lines.append(f"  {change}")
-        if stats["skipped"]:
-            lines.append(f"  ({stats['skipped']} params not available on this plugin)")
-        return "\n".join(lines), ""
-
-    # New tone description — search anchors
     results = state.engine.query(text, top_k=5, plugin_name=state.plugin_name)
     state.last_results = results
 
@@ -212,7 +199,38 @@ def search_tone(text: str) -> tuple[str, str]:
         lines.append(f"[{i+1}] {r['preset_name']}  (score: {r['score']:.3f})")
     display = "\n".join(lines)
 
-    return f"Found {len(results)} matches. Click a number to apply, or click 'Apply Blended'.", display
+    return f"Found {len(results)} matches. Click a number to apply, or click 'Blend All'.", display
+
+
+def refine_tone(text: str) -> str:
+    """Apply a delta command to the currently loaded tone.
+
+    Refinement operates on the live plugin state — reads current params,
+    adds the parsed delta, writes back. Requires a tone to be loaded first.
+    """
+    if state.plugin is None:
+        return "No plugin loaded."
+    if not state.tone_loaded:
+        return "Load a tone first (search and apply a match), then refine."
+    if not text.strip():
+        return "Enter a refinement command."
+
+    deltas = parse_deltas(text)
+    if not deltas:
+        keywords = ", ".join(sorted(recognized_keywords())[:20])
+        return (
+            f"Couldn't parse: '{text}'.\n"
+            f"Try: brighter, darker, warmer, more gain, less fizzy, add delay, ...\n"
+            f"Recognized keywords include: {keywords}, ..."
+        )
+
+    stats = apply_delta(state.plugin, deltas)
+    lines = [f"Refined: {text}"]
+    for change in stats["changes"]:
+        lines.append(f"  {change}")
+    if stats["skipped"]:
+        lines.append(f"  ({stats['skipped']} params not available on this plugin)")
+    return "\n".join(lines)
 
 
 def apply_choice(choice: int) -> str:
@@ -227,29 +245,15 @@ def apply_choice(choice: int) -> str:
     result = state.last_results[choice]
     preset_path = result.get("preset_path")
 
-    # Try raw preset loading first (lossless — all 170 params)
-    if preset_path and state.key_map and Path(preset_path).exists():
-        stats = load_preset(state.plugin, preset_path, state.key_map)
-        state.current_tone = None  # raw preset, no canonical representation
-        return (
-            f"Applied: {result['preset_name']} (raw preset, {stats['applied']} params)\n"
-            f"  Full factory preset loaded — all parameters preserved."
-        )
+    if not (preset_path and state.key_map and Path(preset_path).exists()):
+        return f"Preset file not found: {preset_path}"
 
-    # Fallback to canonical if preset file not found
-    from neuraldsp_nlp_controller.nlp_engine import _dict_to_tone
-    tone = _dict_to_tone(result["tone"])
-    tone.plugin_name = result["plugin_name"]
-    tone.preset_name = result["preset_name"]
-    state.current_tone = tone
-
-    apply(state.plugin, tone)
+    stats = load_preset(state.plugin, preset_path, state.key_map)
+    state.current_tone = None  # raw preset, no canonical representation
+    state.tone_loaded = True
     return (
-        f"Applied: {result['preset_name']} (canonical fallback)\n"
-        f"  Amp: {tone.amp.character}  gain={tone.amp.gain:.2f}  "
-        f"bass={tone.amp.bass:.2f}  mid={tone.amp.mid:.2f}  "
-        f"treble={tone.amp.treble:.2f}\n"
-        + _effects_line(tone)
+        f"Applied: {result['preset_name']} (raw preset, {stats['applied']} params)\n"
+        f"  Full factory preset loaded — all parameters preserved."
     )
 
 
@@ -262,7 +266,6 @@ def apply_blended() -> str:
 
     import math
 
-    # Collect preset paths and compute weights (exponential decay by score)
     preset_paths = []
     weights = []
     names = []
@@ -274,35 +277,16 @@ def apply_blended() -> str:
             names.append(r["preset_name"])
 
     if not preset_paths:
-        # Fallback to canonical if no raw presets available
-        from neuraldsp_nlp_controller.nlp_engine import _interpolate
-        tone = _interpolate(state.last_results, sensitivity=1.0)
-        state.current_tone = tone
-        apply(state.plugin, tone)
-        return "Applied: canonical blend (no raw presets found)."
+        return "No preset files found for blending."
 
     stats = blend_presets(state.plugin, preset_paths, weights, state.key_map)
-    state.current_tone = None  # raw blend, no canonical representation
+    state.current_tone = None
+    state.tone_loaded = True
     presets_str = ", ".join(names[:3])
     return (
         f"Applied: raw blend from {len(preset_paths)} presets ({presets_str}...)\n"
         f"  {stats['applied']} params blended, {stats['failed']} failed."
     )
-
-
-def _effects_line(tone) -> str:
-    effects = []
-    if tone.overdrive.active:
-        effects.append(f"OD (drive={tone.overdrive.drive:.2f})")
-    if tone.compressor.active:
-        effects.append(f"Comp ({tone.compressor.compression:.2f})")
-    if tone.chorus.active:
-        effects.append(f"Chorus (mix={tone.chorus.mix:.2f})")
-    if tone.delay.active:
-        effects.append(f"Delay (mix={tone.delay.mix:.2f})")
-    if tone.reverb.active:
-        effects.append(f"Reverb (mix={tone.reverb.mix:.2f})")
-    return "  Effects: " + (" | ".join(effects) if effects else "none")
 
 
 # ── Gradio UI ────────────────────────────────────────────────────────
@@ -331,10 +315,10 @@ def build_ui():
         switch_btn.click(fn=switch_plugin, inputs=[plugin_dd, input_dd, output_dd], outputs=audio_status)
 
         gr.Markdown("---")
+        gr.Markdown("## 1. Search for a tone")
 
-        # Tone search
         tone_input = gr.Textbox(
-            label="Describe your tone",
+            label="Describe a tone",
             placeholder="warm blues crunch, ambient shimmer, 80s chorus clean...",
             lines=1,
         )
@@ -346,7 +330,6 @@ def build_ui():
         search_btn.click(fn=search_tone, inputs=tone_input, outputs=[search_status, results_display])
         tone_input.submit(fn=search_tone, inputs=tone_input, outputs=[search_status, results_display])
 
-        # Apply buttons
         with gr.Row():
             btn1 = gr.Button("1")
             btn2 = gr.Button("2")
@@ -363,6 +346,25 @@ def build_ui():
         btn4.click(fn=lambda: apply_choice(3), outputs=applied_display)
         btn5.click(fn=lambda: apply_choice(4), outputs=applied_display)
         blend_btn.click(fn=apply_blended, outputs=applied_display)
+
+        gr.Markdown("---")
+        gr.Markdown("## 2. Refine the loaded tone")
+        gr.Markdown(
+            "*Adjust the currently-playing tone with delta commands — "
+            "no re-search. Examples: `brighter`, `darker`, `more gain`, "
+            "`less fizzy`, `add delay`, `a bit warmer`.*"
+        )
+
+        refine_input = gr.Textbox(
+            label="Refinement command",
+            placeholder="brighter, more gain, less fizzy...",
+            lines=1,
+        )
+        refine_btn = gr.Button("Refine", variant="primary")
+        refine_display = gr.Textbox(label="Refinement Result", interactive=False, lines=4)
+
+        refine_btn.click(fn=refine_tone, inputs=refine_input, outputs=refine_display)
+        refine_input.submit(fn=refine_tone, inputs=refine_input, outputs=refine_display)
 
     return app
 

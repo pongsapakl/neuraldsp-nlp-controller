@@ -98,74 +98,7 @@ for name in sorted(p.parameters.keys()):
             print(name)
 ```
 
-## Step 4: Add Semantic Config
-
-In `src/neuraldsp_nlp_controller/semantic_extractor.py`, add to `_PLUGIN_SEMANTICS`:
-
-```python
-_PLUGIN_SEMANTICS = {
-    # ... existing plugins ...
-    "Archetype Nolly X": {
-        "amp_types": {
-            "Rhythm": {"character": "crunch", "tags": ["British crunch", "Marshall-style", "tight"]},
-            "Lead":   {"character": "lead",   "tags": ["modern lead", "high gain", "articulate"]},
-            "Clean":  {"character": "clean",  "tags": ["studio clean", "transparent", "headroom"]},
-        },
-        "amp_gain_param": {
-            "Rhythm": "rhythm_amp_gain",
-            "Lead":   "lead_amp_gain",
-            "Clean":  "clean_amp_gain",
-        },
-        "amp_prefix": {
-            "Rhythm": "rhythm_amp",
-            "Lead":   "lead_amp",
-            "Clean":  "clean_amp",
-        },
-        "eq_prefix": {
-            "Rhythm": "rhythm_eq",
-            "Lead":   "lead_eq",
-            "Clean":  "clean_eq",
-        },
-        "delay_types": {
-            "Modern":          ["modern delay", "clean repeats"],
-            "Vintage Digital": ["vintage delay", "lo-fi repeats"],
-        },
-        "reverb_modes": {
-            "Reverb":  ["reverb"],
-            "Shimmer": ["shimmer reverb", "ethereal"],
-        },
-        "mic_semantics": {
-            "Dynamic 57":    ["dynamic mic punch"],
-            "Ribbon 121":    ["ribbon mic warmth"],
-            "Condenser 414": ["condenser clarity", "airy"],
-        },
-    },
-}
-```
-
-Finding the right values:
-
-```python
-# Amp type values
-print(list(p.parameters["amp_type"].valid_values))
-
-# Delay type values
-print(list(p.parameters["delay_type"].valid_values))
-
-# Reverb mode values (might be "reverb_shimmer" or similar)
-for name in sorted(p.parameters.keys()):
-    if "shimmer" in name or "reverb" in name:
-        param = p.parameters[name]
-        if param.min_value is None:  # string enum
-            print(name, list(param.valid_values))
-
-# Mic type values
-for name in sorted(p.parameters.keys()):
-    if "mic" in name and "type" in name:
-        print(name, list(p.parameters[name].valid_values))
-```
-
-## Step 5: Add Plugin to App (optional)
+## Step 4: Add Plugin to App (optional)
 
 In `app.py`, add the VST3 path to `PRESET_DIRS` so the app can find the preset directory:
 
@@ -177,7 +110,7 @@ PRESET_DIRS = {
 }
 ```
 
-## Step 6: Rebuild Anchor Database
+## Step 5: Rebuild Anchor Database
 
 ```bash
 uv run python scripts/build_anchor_db.py
@@ -185,7 +118,7 @@ uv run python scripts/build_anchor_db.py
 
 This takes ~10 minutes (loads every preset file). The output will show the new plugin's anchors.
 
-## Step 7: Verify
+## Step 6: Verify
 
 ```bash
 # Quick test: check the new anchors exist
@@ -203,17 +136,9 @@ for plugin in set(a['plugin_name'] for a in anchors if a['plugin_name']):
 - **No changes to `preset_loader.py`** — auto-discovery handles param mapping automatically
 - **No changes to `nlp_engine.py`** — it reads from `anchors.yaml`, which now includes the new plugin
 - **No changes to `refinement.py`** — refinement works via canonical params, which the adapter translates
-- **No changes to `generate_coverage_anchors.py`** — it reads from `_PLUGIN_SEMANTICS` automatically
 
 ## Troubleshooting
 
 **"0 presets found"** — Check that the preset directory exists and contains `.xml` files. Neural DSP presets are in subdirectories (e.g., `Artists/`, `Factory/`).
 
 **Low mapping coverage** — Run `scripts/test_preset_loader.py` to see unmapped params. Most Neural DSP plugins map 155-160 of ~170 params automatically.
-
-**Semantic tags missing** — Make sure `plugin.name` returns the exact string used as the key in `_PLUGIN_SEMANTICS`. Check with:
-```python
-from pedalboard import load_plugin
-p = load_plugin("/Library/Audio/Plug-Ins/VST3/Your Plugin.vst3")
-print(repr(p.name))
-```

@@ -24,7 +24,6 @@ The system maps natural language tone descriptions to Neural DSP plugin paramete
         │                      │
         │  adapter.py          │  Canonical ↔ plugin-specific params
         │  preset_loader.py    │  Raw preset I/O (~170 params)
-        │  semantic_extractor  │  Raw params → semantic tags
         └──────────┬──────────┘
                    │ setattr(plugin, param, value)
         ┌──────────▼──────────┐
@@ -40,12 +39,12 @@ The system maps natural language tone descriptions to Neural DSP plugin paramete
 ### Flow 1: New Tone Query
 
 ```
-"warm Vox crunch with delay"
+"warm clean with reverb"
         │
         ▼
   NLPEngine.query()
   ├── Embed text (sentence-transformer)
-  ├── Cosine similarity vs 462 anchor embeddings
+  ├── Cosine similarity vs ~422 preset anchor embeddings
   └── Return top-5: [{description, score, preset_path, tone}, ...]
         │
         ▼
@@ -63,10 +62,7 @@ The system maps natural language tone descriptions to Neural DSP plugin paramete
 ### Flow 2: Refinement ("less fizzy")
 
 ```
-"less fizzy"
-      │
-      ▼
-  refinement.is_refinement()  →  True
+"less fizzy"   (typed into the refinement textbox, separate from search)
       │
       ▼
   refinement.parse_deltas()
@@ -91,14 +87,10 @@ Factory preset files (.xml)
   For each preset:
   ├── preset_loader.load_preset()     →  Load all ~170 params into plugin
   ├── adapter.extract()               →  Read 15 canonical params
-  ├── semantic_extractor.extract()    →  Read ~170 raw params → 10-15 tags
-  └── anchor_builder._describe_tone() →  Combine name + tags → description
+  └── anchor_builder._describe_tone() →  Preset name + measured canonical values
       │
       ▼
-  + generate_coverage_anchors()        →  40 synthetic anchors for gaps
-      │
-      ▼
-  data/anchors.yaml (462 entries)
+  data/anchors.yaml (~422 entries)
 ```
 
 ## Module Details
@@ -108,10 +100,10 @@ Factory preset files (.xml)
 Embeds text and anchor descriptions using `all-MiniLM-L6-v2` (sentence-transformers). Matching is pure cosine similarity — no LLM, no API calls.
 
 Key methods:
-- `query(text, top_k, plugin_name)` → top-K matches with scores
-- `match(text, top_k, sensitivity, plugin_name)` → blended CanonicalTone (for canonical path)
+- `query(text, top_k, plugin_name)` → top-K matches with scores and preset paths (used by V1 Clean app)
+- `match(text, top_k, sensitivity, plugin_name)` → blended CanonicalTone (kept for library consumers; unused in V1 Clean app, which blends at the raw-preset level via `preset_loader.blend_presets()`)
 
-Blending uses exponential-decay weighting: `weight = exp(-(1 - similarity) * sensitivity)`. Same algorithm as the 1P VST plugin.
+Blend weighting uses exponential decay: `weight = exp(-(1 - similarity))`.
 
 ### `canonical.py` — Canonical Schema
 
@@ -126,7 +118,7 @@ A 15-parameter, 0-1 normalized representation of a guitar tone:
 | Delay | active, time, feedback, mix |
 | Reverb | active, size, damping, mix |
 
-This schema is **not used for audio** — it's a semantic layer for NLP matching and a migration bridge for V2.
+This schema is **not used for audio rendering** — audio always goes through raw preset loading. Canonical is the substrate for two things only: (1) `anchor_builder._describe_tone()` turns canonical values into text for the anchor DB, and (2) `refinement.apply_delta()` operates in canonical space so delta commands can work identically across plugins.
 
 ### `adapter.py` — Plugin Adapter
 
@@ -153,35 +145,19 @@ Auto-discovery algorithm:
 
 Result: ~159 of ~170 params mapped automatically, no per-plugin config needed.
 
-### `semantic_extractor.py` — Semantic Extractor
-
-Extracts human-readable tonal tags from raw plugin params. Rule-based, not ML.
-
-Dimensions extracted:
-1. **Amp character** — from `amp_type` enum ("Roses" → "Fender-style clean, glassy")
-2. **Gain staging** — from amp gain value ("moderate gain", "fully saturated")
-3. **EQ shape** — from 9-band EQ values ("mid-scoop", "V-curve", "bright")
-4. **Effect character** — from effect params ("vintage delay", "shimmer reverb")
-5. **Mic character** — from mic type enums ("dynamic mic punch", "ribbon mic warmth")
-6. **Complexity** — from count of active effects ("simple", "heavily layered")
-
-Plugin-specific knowledge is in `_PLUGIN_SEMANTICS` config dict (~30 lines per plugin).
-
 ### `refinement.py` — Refinement System
 
-Detects and parses delta commands for stateful tone modification.
+Parses delta commands for stateful tone modification. Uses a dedicated refinement textbox in the UI (enabled after a tone is loaded), so there is no keyword-based mode detection.
 
-Detection (`is_refinement`): checks for direction prefixes ("more/less/add/remove") and comparative adjectives ("brighter/darker/warmer").
-
-Parsing (`parse_deltas`): maps ~30 tone keywords to canonical param deltas with direction weights. Supports magnitude modifiers ("a bit less", "way more").
+`parse_deltas`: maps ~30 tone keywords and comparative adjectives to canonical param deltas with direction weights. Supports magnitude modifiers ("a bit less", "way more") and applies `difflib` fuzzy matching for typo tolerance ("crhnchy" → "crunchy").
 
 ### `app.py` — Gradio App
 
 Real-time audio streaming via pedalboard's `AudioStream`. Handles:
 - Audio device selection and streaming
 - Plugin loading/swapping (main-thread loader queue for VST3/Cocoa compatibility)
-- Text input → NLP query → result display
-- Top-5 selection, preset loading, blending
+- **Two separate textboxes**: search (always active) and refine (enabled only after a tone is loaded)
+- Top-5 selection, raw preset loading, raw preset blending
 
 ## Extension Points
 
@@ -194,8 +170,8 @@ Replace `adapter.py` and `preset_loader.py`. The NLP engine, canonical schema, a
 ### Improving NLP
 The embedding model, matching algorithm, and description generation can all be upgraded independently of the DSP layer. The anchor database format (`data/anchors.yaml`) is the stable interface.
 
-### Adding new semantic dimensions
-Add extraction logic to `semantic_extractor.py` and config to `_PLUGIN_SEMANTICS`. Coverage anchors in `generate_coverage_anchors.py` can then reference the new dimension.
+### Enriching descriptions
+The current `_describe_tone()` in `anchor_builder.py` derives its output from the adapter's measured canonical values. To add new description dimensions, extend `_describe_tone()` — but only with things the adapter can actually measure, not hand-guessed style labels.
 
 ## Threading Model
 

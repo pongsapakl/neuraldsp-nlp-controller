@@ -1,16 +1,17 @@
 """Stateful iterative refinement — parse delta commands into parameter adjustments.
 
-Detects whether user input is a refinement ("less fizzy", "brighter") vs a new
-tone description ("warm blues crunch"). For refinements, parses the text into
-canonical parameter deltas that can be applied to the current plugin state.
+Parses natural-language refinement commands ("less fizzy", "brighter",
+"more gain") into canonical parameter deltas that can be applied to the
+current plugin state via adapter.apply_delta().
 
 Usage:
-  from neuraldsp_nlp_controller.refinement import is_refinement, parse_deltas
+  from neuraldsp_nlp_controller.refinement import parse_deltas
 
-  if is_refinement("less fizzy"):
-      deltas = parse_deltas("less fizzy")
-      # → {"amp.treble": -0.1, "amp.presence": -0.1}
+  deltas = parse_deltas("less fizzy")
+  # → {"amp.treble": -0.1, "amp.presence": -0.1}
 """
+
+import difflib
 
 DELTA_STEP = 0.1
 
@@ -124,21 +125,17 @@ _MAGNITUDE_MODIFIERS = {
 }
 
 
-def is_refinement(text: str) -> bool:
-    """Check if text is a refinement command vs a new tone description."""
-    t = text.lower().strip()
+def recognized_keywords() -> list[str]:
+    """Return the full list of recognized tokens (keywords + comparatives)."""
+    return list(_KEYWORDS.keys()) + list(_COMPARATIVES.keys())
 
-    # Direction prefix → definitely refinement
-    for prefix in _DIRECTION_PREFIXES:
-        if t.startswith(prefix):
-            return True
 
-    # Comparative adjective → definitely refinement
-    for comp in _COMPARATIVES:
-        if comp in t:
-            return True
-
-    return False
+def suggest_keyword(token: str, cutoff: float = 0.75) -> str | None:
+    """Return the nearest recognized keyword to `token`, or None if no close match."""
+    matches = difflib.get_close_matches(
+        token.lower(), recognized_keywords(), n=1, cutoff=cutoff
+    )
+    return matches[0] if matches else None
 
 
 def parse_deltas(text: str) -> dict[str, float]:
@@ -146,6 +143,8 @@ def parse_deltas(text: str) -> dict[str, float]:
 
     Positive delta = increase, negative = decrease.
     Delta magnitude is DELTA_STEP (0.1) by default, scaled by modifiers.
+    Applies simple fuzzy matching: unknown tokens get replaced by their
+    nearest recognized keyword if similarity > 0.75 (typo tolerance).
     """
     t = text.lower().strip()
 
@@ -179,5 +178,18 @@ def parse_deltas(text: str) -> dict[str, float]:
                 for param, weight in params.items():
                     delta = weight * direction * magnitude
                     deltas[param] = deltas.get(param, 0) + delta
+
+    # Fuzzy fallback — typo tolerance on the last token of the input
+    if not deltas:
+        tokens = t.split()
+        if tokens:
+            fuzzy = suggest_keyword(tokens[-1])
+            if fuzzy:
+                if fuzzy in _COMPARATIVES:
+                    for param, weight in _COMPARATIVES[fuzzy].items():
+                        deltas[param] = deltas.get(param, 0) + weight * magnitude
+                elif fuzzy in _KEYWORDS:
+                    for param, weight in _KEYWORDS[fuzzy].items():
+                        deltas[param] = deltas.get(param, 0) + weight * direction * magnitude
 
     return deltas
