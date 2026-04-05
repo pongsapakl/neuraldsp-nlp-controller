@@ -8,8 +8,12 @@ Usage:
 Requires: Audio interface connected, at least one Neural DSP Archetype plugin installed.
 """
 
+import os
 import sys
 from pathlib import Path
+
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import gradio as gr
 from pedalboard import Pedalboard, load_plugin
@@ -203,7 +207,7 @@ def build_ui():
     if not installed:
         raise RuntimeError("No Neural DSP plugins found.")
 
-    with gr.Blocks(title="Neural DSP NLP Controller", theme=gr.themes.Soft()) as app:
+    with gr.Blocks(title="Neural DSP NLP Controller") as app:
         gr.Markdown("# Neural DSP NLP Controller\n"
                      "Type your tone, hear it live through your guitar.")
 
@@ -284,4 +288,4 @@ if __name__ == "__main__":
 
     # Launch UI
     app = build_ui()
-    app.launch()
+    app.launch(theme=gr.themes.Soft())
