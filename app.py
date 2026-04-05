@@ -38,6 +38,7 @@ AVAILABLE_PLUGINS = {
 
 class AppState:
     def __init__(self):
+        self.plugin_pool: dict[str, list] = {}  # name -> [fresh instances]
         self.plugin = None
         self.plugin_name = ""
         self.stream = None
@@ -63,21 +64,30 @@ def get_audio_devices() -> tuple[list[str], list[str]]:
     return list(AudioStream.input_device_names), list(AudioStream.output_device_names)
 
 
-def _load_plugin_safe(plugin_name: str):
-    """Load a fresh plugin instance. Uses reset=False for worker thread safety."""
-    vst3_path = AVAILABLE_PLUGINS.get(plugin_name)
-    if not vst3_path:
-        return None
-    return load_plugin(vst3_path, reset=False)
+POOL_SIZE = 5  # instances per plugin, enough for a session
+
+
+def preload_plugins():
+    """Pre-load multiple instances of each plugin on the main thread.
+
+    VST3 plugins must be loaded on the main thread. Each swap consumes
+    one instance (used instances can't be reused after AudioStream stops).
+    """
+    for name, path in AVAILABLE_PLUGINS.items():
+        if not Path(path).exists():
+            continue
+        print(f"  Loading {name} ({POOL_SIZE} instances)...")
+        state.plugin_pool[name] = [load_plugin(path) for _ in range(POOL_SIZE)]
 
 
 def _start_stream(plugin_name: str, input_device: str, output_device: str) -> str:
-    """Load a fresh plugin and start AudioStream."""
+    """Take a fresh plugin from the pool and start AudioStream."""
     _stop_stream()
 
-    plugin = _load_plugin_safe(plugin_name)
-    if not plugin:
-        return f"Plugin not found: {plugin_name}"
+    pool = state.plugin_pool.get(plugin_name, [])
+    if not pool:
+        return f"No instances left for {plugin_name}. Restart the app."
+    plugin = pool.pop(0)
 
     try:
         state.plugin = plugin
@@ -283,33 +293,23 @@ if __name__ == "__main__":
         print("ERROR: No audio devices found. Connect an audio interface.")
         sys.exit(1)
 
-    # Load NLP engine
+    # Load everything on main thread (VST3 requires it)
     print("Loading NLP engine...")
     state.engine = NLPEngine(ANCHOR_PATH)
     print(f"  {len(state.engine.anchors)} anchors loaded.")
 
-    # Auto-start audio with first plugin (main thread — no reset=False needed)
+    print("Pre-loading plugins...")
+    preload_plugins()
+    remaining = sum(len(v) for v in state.plugin_pool.values())
+    print(f"  {remaining} instances ready.")
+
+    # Auto-start audio (uses one instance from the pool)
     plugin_name = installed[0]
     input_device = inputs[0]
     output_device = outputs[0]
     print(f"Starting audio: {input_device} -> {plugin_name} -> {output_device}")
-
-    # First load on main thread (full reset)
-    state.plugin = load_plugin(AVAILABLE_PLUGINS[plugin_name])
-    state.plugin_name = plugin_name
-    state.input_device = input_device
-    state.output_device = output_device
-    state.board = Pedalboard([state.plugin])
-    state.stream = AudioStream(
-        input_device_name=input_device,
-        output_device_name=output_device,
-        sample_rate=float(SAMPLE_RATE),
-        buffer_size=BUFFER_SIZE,
-        plugins=state.board,
-        allow_feedback=True,
-    )
-    state.stream.__enter__()
-    print(f"  Streaming: {input_device} -> {plugin_name} -> {output_device}")
+    result = _start_stream(plugin_name, input_device, output_device)
+    print(f"  {result}")
 
     # Launch UI
     app = build_ui()
