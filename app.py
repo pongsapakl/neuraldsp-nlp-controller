@@ -38,14 +38,16 @@ AVAILABLE_PLUGINS = {
 
 class AppState:
     def __init__(self):
+        self.plugins: dict[str, object] = {}  # pre-loaded on main thread
         self.plugin = None
         self.plugin_name = ""
         self.stream = None
         self.board = None
         self.engine = None
         self.current_tone = None
-        # Cache last query results so user can click to apply any of them
         self.last_results: list[dict] = []
+        self.input_device = ""
+        self.output_device = ""
 
 
 state = AppState()
@@ -62,18 +64,31 @@ def get_audio_devices() -> tuple[list[str], list[str]]:
     return list(AudioStream.input_device_names), list(AudioStream.output_device_names)
 
 
+def preload_plugins():
+    """Pre-load all installed plugins on the main thread.
+
+    VST3 plugins must be loaded on the main thread. Gradio callbacks
+    run in worker threads, so we load everything upfront.
+    """
+    for name, path in AVAILABLE_PLUGINS.items():
+        if Path(path).exists():
+            print(f"  Loading {name}...")
+            state.plugins[name] = load_plugin(path)
+
+
 def _start_stream(plugin_name: str, input_device: str, output_device: str) -> str:
-    """Load plugin on main thread and start AudioStream."""
+    """Start AudioStream with a pre-loaded plugin."""
     _stop_stream()
 
-    vst3_path = AVAILABLE_PLUGINS.get(plugin_name)
-    if not vst3_path:
-        return f"Plugin not found: {plugin_name}"
+    plugin = state.plugins.get(plugin_name)
+    if not plugin:
+        return f"Plugin not loaded: {plugin_name}"
 
     try:
-        # Load plugin on main thread to avoid thread-safety issues
-        state.plugin = load_plugin(vst3_path)
+        state.plugin = plugin
         state.plugin_name = plugin_name
+        state.input_device = input_device
+        state.output_device = output_device
         state.board = Pedalboard([state.plugin])
         state.stream = AudioStream(
             input_device_name=input_device,
@@ -106,7 +121,7 @@ def _stop_stream():
 
 
 def switch_plugin(plugin_name: str, input_device: str, output_device: str) -> str:
-    """Switch plugin — restart stream with new plugin."""
+    """Switch plugin — stop current stream and start with new plugin."""
     return _start_stream(plugin_name, input_device, output_device)
 
 
@@ -273,12 +288,16 @@ if __name__ == "__main__":
         print("ERROR: No audio devices found. Connect an audio interface.")
         sys.exit(1)
 
-    # Load NLP engine on main thread
+    # Load everything on main thread (VST3 requires it)
     print("Loading NLP engine...")
     state.engine = NLPEngine(ANCHOR_PATH)
     print(f"  {len(state.engine.anchors)} anchors loaded.")
 
-    # Auto-start audio on main thread (avoids thread-safety error)
+    print("Pre-loading plugins...")
+    preload_plugins()
+    print(f"  {len(state.plugins)} plugins ready.")
+
+    # Auto-start audio with first plugin
     plugin_name = installed[0]
     input_device = inputs[0]
     output_device = outputs[0]
