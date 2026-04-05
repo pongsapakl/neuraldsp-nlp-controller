@@ -9,7 +9,9 @@ Requires: Audio interface connected, at least one Neural DSP Archetype plugin in
 """
 
 import os
+import queue
 import sys
+import threading
 from pathlib import Path
 
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
@@ -34,11 +36,54 @@ AVAILABLE_PLUGINS = {
 }
 
 
+# ── Plugin Loader (main-thread service) ─────────────────────────────
+
+_load_queue: queue.Queue = queue.Queue()
+
+
+def _load_plugin_on_main_thread(plugin_name: str):
+    """Load a fresh plugin instance, routing to the main thread if needed.
+
+    VST3 plugins must be created on the main thread (macOS/Cocoa requirement).
+    If called from the main thread (startup), loads directly.
+    If called from a worker thread (Gradio callback), sends a request to the
+    main-thread loader loop and blocks until it's fulfilled.
+    """
+    path = AVAILABLE_PLUGINS[plugin_name]
+    if threading.current_thread() is threading.main_thread():
+        return load_plugin(path)
+
+    result: dict = {}
+    event = threading.Event()
+    _load_queue.put((plugin_name, path, event, result))
+    if not event.wait(timeout=30):
+        raise RuntimeError(f"Timeout loading {plugin_name}")
+    if "error" in result:
+        raise RuntimeError(result["error"])
+    return result["plugin"]
+
+
+def _main_thread_loader_loop():
+    """Run on the main thread after Gradio launches. Processes load requests."""
+    try:
+        while True:
+            try:
+                _, path, event, result = _load_queue.get(timeout=0.5)
+                try:
+                    result["plugin"] = load_plugin(path)
+                except Exception as e:
+                    result["error"] = str(e)
+                event.set()
+            except queue.Empty:
+                continue
+    except KeyboardInterrupt:
+        pass
+
+
 # ── App State ────────────────────────────────────────────────────────
 
 class AppState:
     def __init__(self):
-        self.plugin_pool: dict[str, list] = {}  # name -> [fresh instances]
         self.plugin = None
         self.plugin_name = ""
         self.stream = None
@@ -64,30 +109,14 @@ def get_audio_devices() -> tuple[list[str], list[str]]:
     return list(AudioStream.input_device_names), list(AudioStream.output_device_names)
 
 
-POOL_SIZE = 5  # instances per plugin, enough for a session
-
-
-def preload_plugins():
-    """Pre-load multiple instances of each plugin on the main thread.
-
-    VST3 plugins must be loaded on the main thread. Each swap consumes
-    one instance (used instances can't be reused after AudioStream stops).
-    """
-    for name, path in AVAILABLE_PLUGINS.items():
-        if not Path(path).exists():
-            continue
-        print(f"  Loading {name} ({POOL_SIZE} instances)...")
-        state.plugin_pool[name] = [load_plugin(path) for _ in range(POOL_SIZE)]
-
-
 def _start_stream(plugin_name: str, input_device: str, output_device: str) -> str:
-    """Take a fresh plugin from the pool and start AudioStream."""
+    """Load a fresh plugin instance and start AudioStream."""
     _stop_stream()
 
-    pool = state.plugin_pool.get(plugin_name, [])
-    if not pool:
-        return f"No instances left for {plugin_name}. Restart the app."
-    plugin = pool.pop(0)
+    try:
+        plugin = _load_plugin_on_main_thread(plugin_name)
+    except RuntimeError as e:
+        return f"Failed to load {plugin_name}: {e}"
 
     try:
         state.plugin = plugin
@@ -293,17 +322,12 @@ if __name__ == "__main__":
         print("ERROR: No audio devices found. Connect an audio interface.")
         sys.exit(1)
 
-    # Load everything on main thread (VST3 requires it)
+    # Load NLP engine on main thread
     print("Loading NLP engine...")
     state.engine = NLPEngine(ANCHOR_PATH)
     print(f"  {len(state.engine.anchors)} anchors loaded.")
 
-    print("Pre-loading plugins...")
-    preload_plugins()
-    remaining = sum(len(v) for v in state.plugin_pool.values())
-    print(f"  {remaining} instances ready.")
-
-    # Auto-start audio (uses one instance from the pool)
+    # Auto-start audio (loads one plugin instance on main thread)
     plugin_name = installed[0]
     input_device = inputs[0]
     output_device = outputs[0]
@@ -311,6 +335,8 @@ if __name__ == "__main__":
     result = _start_stream(plugin_name, input_device, output_device)
     print(f"  {result}")
 
-    # Launch UI
+    # Launch Gradio in background thread, main thread serves plugin loads
     app = build_ui()
-    app.launch(theme=gr.themes.Soft())
+    app.launch(theme=gr.themes.Soft(), prevent_thread_lock=True)
+    print("Main thread ready for plugin load requests.")
+    _main_thread_loader_loop()
