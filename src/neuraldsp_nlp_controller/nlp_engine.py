@@ -72,10 +72,10 @@ class NLPEngine:
         q_emb = self.model.encode([text], normalize_embeddings=True)
         scores = (q_emb @ self.embeddings.T)[0]
 
-        # Filter by plugin if requested
+        # Filter by plugin if requested (empty plugin_name = universal anchor)
         if plugin_name:
             for i, anchor in enumerate(self.anchors):
-                if anchor["plugin_name"] != plugin_name:
+                if anchor["plugin_name"] and anchor["plugin_name"] != plugin_name:
                     scores[i] = -1.0  # exclude
 
         top_indices = np.argsort(scores)[::-1][:top_k]
