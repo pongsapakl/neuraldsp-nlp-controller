@@ -8,15 +8,14 @@ Usage:
 Requires: Audio interface connected, at least one Neural DSP Archetype plugin installed.
 """
 
-import threading
-import time
+import sys
 from pathlib import Path
 
 import gradio as gr
 from pedalboard import Pedalboard, load_plugin
 from pedalboard.io import AudioStream
 
-from neuraldsp_nlp_controller.adapter import apply, extract
+from neuraldsp_nlp_controller.adapter import apply
 from neuraldsp_nlp_controller.nlp_engine import NLPEngine
 
 # ── Configuration ────────────────────────────────────────────────────
@@ -40,11 +39,9 @@ class AppState:
         self.stream = None
         self.board = None
         self.engine = None
-        self.history: list[dict] = []
         self.current_tone = None
-
-    def is_streaming(self) -> bool:
-        return self.stream is not None
+        # Cache last query results so user can click to apply any of them
+        self.last_results: list[dict] = []
 
 
 state = AppState()
@@ -53,33 +50,24 @@ state = AppState()
 # ── Core Functions ───────────────────────────────────────────────────
 
 def get_installed_plugins() -> list[str]:
-    """Detect which Neural DSP plugins are installed."""
     return [name for name, path in AVAILABLE_PLUGINS.items()
             if Path(path).exists()]
 
 
 def get_audio_devices() -> tuple[list[str], list[str]]:
-    """Get available audio input/output devices."""
     return list(AudioStream.input_device_names), list(AudioStream.output_device_names)
 
 
-def load_engine():
-    """Load NLP engine (lazy, once)."""
-    if state.engine is None:
-        state.engine = NLPEngine(ANCHOR_PATH)
-    return state.engine
-
-
-def start_audio(plugin_name: str, input_device: str, output_device: str) -> str:
-    """Load plugin and start AudioStream."""
-    if state.is_streaming():
-        return "Already streaming. Stop first."
+def _start_stream(plugin_name: str, input_device: str, output_device: str) -> str:
+    """Load plugin on main thread and start AudioStream."""
+    _stop_stream()
 
     vst3_path = AVAILABLE_PLUGINS.get(plugin_name)
     if not vst3_path:
         return f"Plugin not found: {plugin_name}"
 
     try:
+        # Load plugin on main thread to avoid thread-safety issues
         state.plugin = load_plugin(vst3_path)
         state.plugin_name = plugin_name
         state.board = Pedalboard([state.plugin])
@@ -95,64 +83,103 @@ def start_audio(plugin_name: str, input_device: str, output_device: str) -> str:
         return f"Streaming: {input_device} -> {plugin_name} -> {output_device}"
     except Exception as e:
         state.stream = None
+        state.plugin = None
         return f"Failed to start: {e}"
 
 
-def stop_audio() -> str:
-    """Stop AudioStream."""
-    if not state.is_streaming():
-        return "Not streaming."
-    try:
-        state.stream.__exit__(None, None, None)
-    except Exception:
-        pass
+def _stop_stream():
+    """Stop AudioStream if running."""
+    if state.stream is not None:
+        try:
+            state.stream.__exit__(None, None, None)
+        except Exception:
+            pass
     state.stream = None
     state.plugin = None
     state.board = None
-    state.plugin_name = ""
-    state.history = []
     state.current_tone = None
-    return "Stopped."
+    state.last_results = []
 
 
-def describe_tone(text: str) -> tuple[str, str, str]:
-    """Process a tone description: NLP match → apply to plugin.
+def switch_plugin(plugin_name: str, input_device: str, output_device: str) -> str:
+    """Switch plugin — restart stream with new plugin."""
+    return _start_stream(plugin_name, input_device, output_device)
 
-    Returns (status, match_info, tone_details).
+
+def search_tone(text: str) -> tuple[str, str]:
+    """Search for matching tones. Returns (status, results_display).
+
+    Does NOT auto-apply — shows top 5 for user to choose from.
     """
-    if not state.is_streaming():
-        return "Not streaming. Start audio first.", "", ""
+    if state.plugin is None:
+        return "No plugin loaded.", ""
     if not text.strip():
-        return "Enter a tone description.", "", ""
+        return "Enter a tone description.", ""
 
-    engine = load_engine()
+    results = state.engine.query(text, top_k=5, plugin_name=state.plugin_name)
+    state.last_results = results
 
-    tone, info = engine.match(
-        text,
-        top_k=5,
-        sensitivity=1.0,
-        plugin_name=state.plugin_name,
-    )
+    if not results:
+        return "No matches found.", ""
+
+    # Build results display
+    lines = []
+    for i, r in enumerate(results):
+        lines.append(f"[{i+1}] {r['preset_name']}  (score: {r['score']:.3f})")
+    display = "\n".join(lines)
+
+    return f"Found {len(results)} matches. Click a number to apply, or click 'Apply Blended'.", display
+
+
+def apply_choice(choice: int) -> str:
+    """Apply a specific match from the last search results."""
+    if state.plugin is None:
+        return "No plugin loaded."
+    if not state.last_results:
+        return "No search results. Search first."
+    if choice < 0 or choice >= len(state.last_results):
+        return f"Invalid choice: {choice+1}"
+
+    result = state.last_results[choice]
+    from neuraldsp_nlp_controller.nlp_engine import _dict_to_tone
+    tone = _dict_to_tone(result["tone"])
+    tone.plugin_name = result["plugin_name"]
+    tone.preset_name = result["preset_name"]
     state.current_tone = tone
 
-    # Apply to plugin
-    result = apply(state.plugin, tone)
-
-    # Build display strings
-    match_display = (
-        f"Best match: {info['preset_name']} (score: {info['score']:.3f})\n"
+    stats = apply(state.plugin, tone)
+    return (
+        f"Applied: {result['preset_name']} (exact)\n"
+        f"  Amp: {tone.amp.character}  gain={tone.amp.gain:.2f}  "
+        f"bass={tone.amp.bass:.2f}  mid={tone.amp.mid:.2f}  "
+        f"treble={tone.amp.treble:.2f}\n"
+        + _effects_line(tone)
     )
-    if "top_matches" in info:
-        match_display += f"Blended from {info['interpolated_from']} anchors:\n"
-        for m in info["top_matches"]:
-            match_display += f"  {m['score']:.3f}  {m['preset']}\n"
 
-    tone_display = (
-        f"Amp: {tone.amp.character}  "
-        f"gain={tone.amp.gain:.2f}  bass={tone.amp.bass:.2f}  "
-        f"mid={tone.amp.mid:.2f}  treble={tone.amp.treble:.2f}  "
-        f"presence={tone.amp.presence:.2f}\n"
+
+def apply_blended() -> str:
+    """Apply interpolated blend of all search results."""
+    if state.plugin is None:
+        return "No plugin loaded."
+    if not state.last_results:
+        return "No search results. Search first."
+
+    from neuraldsp_nlp_controller.nlp_engine import _interpolate
+    tone = _interpolate(state.last_results, sensitivity=1.0)
+    state.current_tone = tone
+
+    stats = apply(state.plugin, tone)
+    presets = ", ".join(r["preset_name"] for r in state.last_results[:3])
+    return (
+        f"Applied: blended from {len(state.last_results)} matches ({presets}...)\n"
+        f"  Amp: {tone.amp.character}  gain={tone.amp.gain:.2f}  "
+        f"bass={tone.amp.bass:.2f}  mid={tone.amp.mid:.2f}  "
+        f"treble={tone.amp.treble:.2f}\n"
+        + _effects_line(tone)
     )
+
+
+def _effects_line(tone) -> str:
     effects = []
     if tone.overdrive.active:
         effects.append(f"OD (drive={tone.overdrive.drive:.2f})")
@@ -161,19 +188,10 @@ def describe_tone(text: str) -> tuple[str, str, str]:
     if tone.chorus.active:
         effects.append(f"Chorus (mix={tone.chorus.mix:.2f})")
     if tone.delay.active:
-        effects.append(f"Delay (time={tone.delay.time:.2f} mix={tone.delay.mix:.2f})")
+        effects.append(f"Delay (mix={tone.delay.mix:.2f})")
     if tone.reverb.active:
-        effects.append(f"Reverb (size={tone.reverb.size:.2f} mix={tone.reverb.mix:.2f})")
-    if effects:
-        tone_display += "Effects: " + " | ".join(effects)
-    else:
-        tone_display += "Effects: none active"
-
-    # Track history
-    state.history.append({"text": text, "preset": info["preset_name"], "score": info["score"]})
-
-    status = f"Applied ({result['applied']} params set, {result['skipped']} skipped)"
-    return status, match_display, tone_display
+        effects.append(f"Reverb (mix={tone.reverb.mix:.2f})")
+    return "  Effects: " + (" | ".join(effects) if effects else "none")
 
 
 # ── Gradio UI ────────────────────────────────────────────────────────
@@ -183,73 +201,57 @@ def build_ui():
     inputs, outputs = get_audio_devices()
 
     if not installed:
-        raise RuntimeError(
-            "No Neural DSP plugins found. Install at least one Archetype plugin."
-        )
+        raise RuntimeError("No Neural DSP plugins found.")
 
     with gr.Blocks(title="Neural DSP NLP Controller", theme=gr.themes.Soft()) as app:
         gr.Markdown("# Neural DSP NLP Controller\n"
                      "Type your tone, hear it live through your guitar.")
 
-        # Audio setup
-        with gr.Row():
-            with gr.Column(scale=1):
-                plugin_dd = gr.Dropdown(
-                    choices=installed,
-                    value=installed[0],
-                    label="Plugin",
-                )
-            with gr.Column(scale=1):
-                input_dd = gr.Dropdown(
-                    choices=inputs,
-                    value=inputs[0] if inputs else None,
-                    label="Audio Input",
-                )
-            with gr.Column(scale=1):
-                output_dd = gr.Dropdown(
-                    choices=outputs,
-                    value=outputs[0] if outputs else None,
-                    label="Audio Output",
-                )
+        # Audio setup (collapsed — auto-started, change only if needed)
+        with gr.Accordion("Audio Settings", open=False):
+            with gr.Row():
+                plugin_dd = gr.Dropdown(choices=installed, value=state.plugin_name or installed[0], label="Plugin")
+                input_dd = gr.Dropdown(choices=inputs, value=inputs[0] if inputs else None, label="Audio Input")
+                output_dd = gr.Dropdown(choices=outputs, value=outputs[0] if outputs else None, label="Audio Output")
+            switch_btn = gr.Button("Restart Audio")
+            audio_status = gr.Textbox(label="Audio Status", interactive=False,
+                                       value=f"Streaming: {state.plugin_name}" if state.plugin else "Not streaming")
 
-        with gr.Row():
-            start_btn = gr.Button("Start Audio", variant="primary")
-            stop_btn = gr.Button("Stop Audio", variant="stop")
-            audio_status = gr.Textbox(label="Audio Status", interactive=False)
-
-        start_btn.click(
-            fn=start_audio,
-            inputs=[plugin_dd, input_dd, output_dd],
-            outputs=audio_status,
-        )
-        stop_btn.click(fn=stop_audio, outputs=audio_status)
+        switch_btn.click(fn=switch_plugin, inputs=[plugin_dd, input_dd, output_dd], outputs=audio_status)
 
         gr.Markdown("---")
 
-        # Tone input
+        # Tone search
         tone_input = gr.Textbox(
             label="Describe your tone",
             placeholder="warm blues crunch, ambient shimmer, 80s chorus clean...",
             lines=1,
         )
-        submit_btn = gr.Button("Apply Tone", variant="primary")
+        search_btn = gr.Button("Search", variant="primary")
 
-        # Results
-        apply_status = gr.Textbox(label="Status", interactive=False)
+        search_status = gr.Textbox(label="Status", interactive=False)
+        results_display = gr.Textbox(label="Matches (click a number to apply)", interactive=False, lines=6)
+
+        search_btn.click(fn=search_tone, inputs=tone_input, outputs=[search_status, results_display])
+        tone_input.submit(fn=search_tone, inputs=tone_input, outputs=[search_status, results_display])
+
+        # Apply buttons
         with gr.Row():
-            match_info = gr.Textbox(label="Match Info", interactive=False, lines=6)
-            tone_details = gr.Textbox(label="Current Tone", interactive=False, lines=4)
+            btn1 = gr.Button("1")
+            btn2 = gr.Button("2")
+            btn3 = gr.Button("3")
+            btn4 = gr.Button("4")
+            btn5 = gr.Button("5")
+            blend_btn = gr.Button("Blend All", variant="secondary")
 
-        submit_btn.click(
-            fn=describe_tone,
-            inputs=tone_input,
-            outputs=[apply_status, match_info, tone_details],
-        )
-        tone_input.submit(
-            fn=describe_tone,
-            inputs=tone_input,
-            outputs=[apply_status, match_info, tone_details],
-        )
+        applied_display = gr.Textbox(label="Applied Tone", interactive=False, lines=4)
+
+        btn1.click(fn=lambda: apply_choice(0), outputs=applied_display)
+        btn2.click(fn=lambda: apply_choice(1), outputs=applied_display)
+        btn3.click(fn=lambda: apply_choice(2), outputs=applied_display)
+        btn4.click(fn=lambda: apply_choice(3), outputs=applied_display)
+        btn5.click(fn=lambda: apply_choice(4), outputs=applied_display)
+        blend_btn.click(fn=apply_blended, outputs=applied_display)
 
     return app
 
@@ -257,9 +259,29 @@ def build_ui():
 # ── Main ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("Loading NLP engine...")
-    load_engine()
-    print(f"Ready. {len(state.engine.anchors)} anchors loaded.")
+    installed = get_installed_plugins()
+    if not installed:
+        print("ERROR: No Neural DSP plugins found.")
+        sys.exit(1)
 
+    inputs, outputs = get_audio_devices()
+    if not inputs or not outputs:
+        print("ERROR: No audio devices found. Connect an audio interface.")
+        sys.exit(1)
+
+    # Load NLP engine on main thread
+    print("Loading NLP engine...")
+    state.engine = NLPEngine(ANCHOR_PATH)
+    print(f"  {len(state.engine.anchors)} anchors loaded.")
+
+    # Auto-start audio on main thread (avoids thread-safety error)
+    plugin_name = installed[0]
+    input_device = inputs[0]
+    output_device = outputs[0]
+    print(f"Starting audio: {input_device} -> {plugin_name} -> {output_device}")
+    result = _start_stream(plugin_name, input_device, output_device)
+    print(f"  {result}")
+
+    # Launch UI
     app = build_ui()
     app.launch()
