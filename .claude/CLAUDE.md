@@ -4,6 +4,29 @@
 
 An NLP-controlled real-time tone engine for Neural DSP Archetype guitar plugins. Users type a tone description and the system matches it to factory presets, loads them into the plugin, and plays live audio through their guitar.
 
+## Core Principles (non-negotiable)
+
+These principles govern every design and implementation decision. They were established through deliberate debate and are documented in `docs/decisions/2026-04-05-v1-clean-no-coverage-no-llm.md`. Do not deviate without explicit user approval.
+
+1. **No LLM in the engine.** No GPT calls, no reasoning models, no generative AI for parameter values. The tone engine is mathematical: embeddings, cosine similarity, rule-based refinement. An LLM-controlled guitar is an AI music agent — that's a different product.
+
+2. **Local-first.** No network calls for tone matching. Everything runs on the user's laptop alongside their DAW. Cloud is only acceptable for optional features (e.g. song upload processing) that don't block the core workflow.
+
+3. **Low-resource.** Must coexist with a DAW + VST3 plugin + real-time audio on a single laptop. Sentence-transformers (~80MB, CPU, milliseconds) is the budget. No 7B+ models, no GPU requirements for core features.
+
+4. **Deterministic.** Same query returns the same preset every time. No sampling, no temperature, no stochastic behavior in the matching pipeline. A guitarist needs to trust that "warm crunch" always gives them the same starting point.
+
+5. **Honest measurements only.** Every description, tag, or label must trace to a value the adapter actually measured from the loaded plugin. If we can't measure it, we don't claim it. No hand-written style labels ("Vox-style", "Fender-style").
+
+6. **Reusable across backends.** The NLP engine and canonical schema must work with any DSP backend (Neural DSP today, NAM tomorrow, custom DSP later). No coupling to specific plugin internals in the matching layer.
+
+7. **Fast, Vast, Easy.** Every feature is graded against these three:
+   - **Fast** — type a few words, get a playable tone in seconds
+   - **Vast** — cover the full range of tones the plugin can produce
+   - **Easy** — sound good out of the box, no knob-twiddling required
+
+8. **This is not an AI music agent.** The product exists so the human plays guitar faster. If a feature moves toward "AI makes music for you", it belongs in a different project.
+
 ## Architecture
 
 ```text
