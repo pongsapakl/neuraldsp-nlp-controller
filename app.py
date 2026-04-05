@@ -381,6 +381,16 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Load NLP engine on main thread
+    if not ANCHOR_PATH.exists():
+        print(f"ERROR: Anchor database not found at {ANCHOR_PATH}")
+        print()
+        print("First-time setup: build the anchor database from your Neural DSP presets:")
+        print("  uv run python scripts/build_anchor_db.py")
+        print()
+        print("This reads your installed Neural DSP factory presets and extracts")
+        print("semantic descriptions for NLP matching. Takes ~10 minutes, runs once.")
+        sys.exit(1)
+
     print("Loading NLP engine...")
     state.engine = NLPEngine(ANCHOR_PATH)
     print(f"  {len(state.engine.anchors)} anchors loaded.")

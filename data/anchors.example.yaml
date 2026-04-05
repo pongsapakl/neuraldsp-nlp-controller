@@ -1,0 +1,1566 @@
+# Example anchor database - contains only synthetic coverage anchors.
+# Factory preset anchors are regenerated from YOUR installed Neural DSP
+# presets on first run - see README for setup.
+#
+# Coverage anchors: 40 (amp types, effects, EQ shapes, genres)
+
+- description: Fender-style clean, glassy, bell-like, clean, low gain, no effects, pure amp tone
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] Fender-style clean'
+  preset_path: ''
+- description: Vox-style crunch, chimey, British, clean, low gain, no effects, pure amp tone
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: crunch
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] Vox-style crunch'
+  preset_path: ''
+- description: Vox-style crunch, chimey, British, pushed hard, high gain, aggressive
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: crunch
+      gain: 0.8
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] Vox-style crunch'
+  preset_path: ''
+- description: hi-gain lead, saturated, modern high-gain, clean, low gain, no effects, pure amp tone
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: lead
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] hi-gain lead'
+  preset_path: ''
+- description: hi-gain lead, saturated, modern high-gain, pushed hard, high gain, aggressive
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: lead
+      gain: 0.8
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] hi-gain lead'
+  preset_path: ''
+- description: funky clean, tight, percussive, clean, low gain, no effects, pure amp tone
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] funky clean'
+  preset_path: ''
+- description: pristine clean, transparent, hi-fi, clean, low gain, no effects, pure amp tone
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] pristine clean'
+  preset_path: ''
+- description: boutique crunch, touch-sensitive, vintage, clean, low gain, no effects, pure amp tone
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: crunch
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] boutique crunch'
+  preset_path: ''
+- description: boutique crunch, touch-sensitive, vintage, pushed hard, high gain, aggressive
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: crunch
+      gain: 0.8
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] boutique crunch'
+  preset_path: ''
+- description: overdrive, light drive boost, edge of breakup, warm push, transparent
+  tone:
+    overdrive:
+      active: true
+      drive: 0.25
+      tone: 0.5
+      level: 0.6
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] overdrive'
+  preset_path: ''
+- description: overdrive, heavy drive, crunchy saturation, tube screamer, thick distortion
+  tone:
+    overdrive:
+      active: true
+      drive: 0.7
+      tone: 0.6
+      level: 0.7
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] overdrive'
+  preset_path: ''
+- description: overdrive, bright cutting drive, treble boost, bite
+  tone:
+    overdrive:
+      active: true
+      drive: 0.5
+      tone: 0.85
+      level: 0.65
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] overdrive'
+  preset_path: ''
+- description: overdrive, dark warm drive, rolled off highs, smooth saturation
+  tone:
+    overdrive:
+      active: true
+      drive: 0.5
+      tone: 0.2
+      level: 0.65
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] overdrive'
+  preset_path: ''
+- description: compressor, light compression, subtle squeeze, even dynamics, transparent
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: true
+      attack: 0.4
+      release: 0.5
+      compression: 0.25
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] compressor'
+  preset_path: ''
+- description: compressor, heavy compression, squashed, sustained, studio squeeze, punchy
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: true
+      attack: 0.6
+      release: 0.5
+      compression: 0.8
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] compressor'
+  preset_path: ''
+- description: chorus, subtle shimmer, light modulation, clean width, sparkle
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: true
+      rate: 0.3
+      depth: 0.3
+      mix: 0.3
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] chorus'
+  preset_path: ''
+- description: chorus, lush 80s chorus, thick modulation, wide stereo, detuned, JC-120
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: true
+      rate: 0.4
+      depth: 0.7
+      mix: 0.6
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] chorus'
+  preset_path: ''
+- description: delay, slapback echo, rockabilly, short repeat, slap
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.1
+      feedback: 0.15
+      mix: 0.4
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] delay'
+  preset_path: ''
+- description: delay, rhythmic delay, dotted eighth, the edge, U2 style
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.45
+      feedback: 0.35
+      mix: 0.35
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] delay'
+  preset_path: ''
+- description: delay, long ambient echo, spacious, atmospheric, trailing repeats
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.65
+      feedback: 0.5
+      mix: 0.4
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] delay'
+  preset_path: ''
+- description: delay, modern delay, clean repeats, medium tempo
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.4
+      feedback: 0.35
+      mix: 0.35
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] delay'
+  preset_path: ''
+- description: delay, diffused delay, washy echoes, textured, medium tempo
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.4
+      feedback: 0.35
+      mix: 0.35
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] delay'
+  preset_path: ''
+- description: delay, vintage delay, lo-fi repeats, retro, medium tempo
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.4
+      feedback: 0.35
+      mix: 0.35
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] delay'
+  preset_path: ''
+- description: reverb, small room, tight ambience, studio room sound, close
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: true
+      size: 0.2
+      damping: 0.6
+      mix: 0.25
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] reverb'
+  preset_path: ''
+- description: reverb, medium hall, warm space, natural, live room
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: true
+      size: 0.5
+      damping: 0.5
+      mix: 0.35
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] reverb'
+  preset_path: ''
+- description: reverb, large hall, spacious, cathedral, epic, vast
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: true
+      size: 0.8
+      damping: 0.4
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] reverb'
+  preset_path: ''
+- description: shimmer reverb, ethereal, pad-like, ambient pad, post-rock, atmospheric
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: true
+      size: 0.85
+      damping: 0.3
+      mix: 0.55
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] shimmer reverb'
+  preset_path: ''
+- description: bright, treble boost, sparkly, airy, presence, cutting
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.4
+      mid: 0.5
+      treble: 0.8
+      presence: 0.7
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] bright'
+  preset_path: ''
+- description: dark, warm, rolled off highs, mellow, smooth, thick
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.65
+      mid: 0.5
+      treble: 0.3
+      presence: 0.3
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] dark'
+  preset_path: ''
+- description: mid-scoop, scooped mids, thrash metal EQ, V-curve
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.7
+      mid: 0.25
+      treble: 0.7
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] mid-scoop'
+  preset_path: ''
+- description: mid-forward, mid-hump, blues tone, vocal mids, honky
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.4
+      bass: 0.45
+      mid: 0.75
+      treble: 0.45
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] mid-forward'
+  preset_path: ''
+- description: overdrive, delay, rock lead with echo, soaring solo, sustain with repeats
+  tone:
+    overdrive:
+      active: true
+      drive: 0.5
+      tone: 0.55
+      level: 0.65
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.4
+      feedback: 0.3
+      mix: 0.3
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: crunch
+      gain: 0.55
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] overdrive'
+  preset_path: ''
+- description: compression, reverb, clean ambient, pad, sustained clean, atmospheric
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: true
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: true
+      size: 0.7
+      damping: 0.5
+      mix: 0.45
+    amp:
+      character: clean
+      gain: 0.25
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] compression'
+  preset_path: ''
+- description: overdrive, reverb, shoegaze, wall of sound, dreamy distortion
+  tone:
+    overdrive:
+      active: true
+      drive: 0.6
+      tone: 0.4
+      level: 0.6
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: true
+      size: 0.85
+      damping: 0.5
+      mix: 0.55
+    amp:
+      character: crunch
+      gain: 0.5
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] overdrive'
+  preset_path: ''
+- description: blues, warm crunch, Texas blues, SRV, Stevie Ray, slightly dirty
+  tone:
+    overdrive:
+      active: true
+      drive: 0.3
+      tone: 0.45
+      level: 0.55
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: crunch
+      gain: 0.45
+      bass: 0.5
+      mid: 0.6
+      treble: 0.55
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] blues'
+  preset_path: ''
+- description: jazz, warm clean, round tone, mellow, smooth, no distortion
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.2
+      bass: 0.55
+      mid: 0.5
+      treble: 0.35
+      presence: 0.3
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] jazz'
+  preset_path: ''
+- description: metal, heavy distortion, chug, palm mute, aggressive, djent, tight
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: lead
+      gain: 0.85
+      bass: 0.45
+      mid: 0.5
+      treble: 0.6
+      presence: 0.65
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] metal'
+  preset_path: ''
+- description: ambient, post-rock, atmospheric, spacious, clean delay reverb wash
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: false
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: true
+      time: 0.6
+      feedback: 0.45
+      mix: 0.4
+    reverb:
+      active: true
+      size: 0.8
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.2
+      bass: 0.5
+      mid: 0.5
+      treble: 0.5
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] ambient'
+  preset_path: ''
+- description: country, twang, chicken picking, clean bright, Telecaster snap
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: true
+      attack: 0.5
+      release: 0.5
+      compression: 0.4
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.3
+      bass: 0.5
+      mid: 0.5
+      treble: 0.7
+      presence: 0.65
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] country'
+  preset_path: ''
+- description: funk, tight clean, percussive, snappy, wah-like, envelope filter
+  tone:
+    overdrive:
+      active: false
+      drive: 0.5
+      tone: 0.5
+      level: 0.5
+    compressor:
+      active: true
+      attack: 0.5
+      release: 0.5
+      compression: 0.5
+    chorus:
+      active: false
+      rate: 0.5
+      depth: 0.5
+      mix: 0.5
+    delay:
+      active: false
+      time: 0.5
+      feedback: 0.5
+      mix: 0.5
+    reverb:
+      active: false
+      size: 0.5
+      damping: 0.5
+      mix: 0.5
+    amp:
+      character: clean
+      gain: 0.3
+      bass: 0.5
+      mid: 0.55
+      treble: 0.6
+      presence: 0.5
+      master: 0.5
+      output: 0.5
+  plugin_name: ''
+  preset_name: '[Coverage] funk'
+  preset_path: ''
