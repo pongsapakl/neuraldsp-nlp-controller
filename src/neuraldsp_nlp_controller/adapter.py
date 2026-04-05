@@ -333,3 +333,96 @@ def apply(plugin, tone: CanonicalTone) -> dict:
     set_effect("reverb", "mix", tone.reverb.mix)
 
     return {"applied": applied, "skipped": skipped}
+
+
+# ── Delta: adjust specific params relative to current ──────────────
+
+def apply_delta(plugin, deltas: dict[str, float]) -> dict:
+    """Apply parameter deltas to current plugin state.
+
+    Each delta is in canonical 0-1 space. Reads current value from plugin,
+    adds delta, clamps to valid range, sets new value. Only touches the
+    params specified — everything else stays untouched.
+
+    Args:
+        plugin: pedalboard plugin instance (already streaming)
+        deltas: {canonical_param: delta} e.g. {"amp.treble": -0.1}
+                Canonical params: amp.gain, amp.bass, amp.mid, amp.treble,
+                amp.presence, amp.master, amp.output, overdrive.drive,
+                overdrive.tone, overdrive.level, compressor.compression,
+                chorus.rate, chorus.depth, chorus.mix, delay.time,
+                delay.feedback, delay.mix, reverb.size, reverb.damping,
+                reverb.mix
+
+    Returns:
+        Dict with applied (int), skipped (int), changes (list[str]).
+    """
+    plugin_name = _detect_plugin_name(plugin)
+    channels = _AMP_CHANNELS[plugin_name]
+    effects = _EFFECTS[plugin_name]
+    params = set(plugin.parameters.keys())
+
+    # Detect active amp channel
+    amp_type_val = _read_param(plugin, "amp_type")
+    prefix = None
+    if amp_type_val and amp_type_val in channels:
+        _, prefix = channels[amp_type_val]
+    if not prefix:
+        prefix = next(iter(channels.values()))[1]
+
+    applied, skipped = 0, 0
+    changes: list[str] = []
+
+    for canonical_param, delta in deltas.items():
+        section, field = canonical_param.split(".", 1)
+
+        # Find the pedalboard param name
+        pb_name = None
+        if section == "amp":
+            for suffix in _AMP_PARAMS.get(field, (field,)):
+                full = f"{prefix}_{suffix}"
+                if full in params:
+                    pb_name = full
+                    break
+        else:
+            pb_name = effects.get(section, {}).get(field)
+            if pb_name and pb_name not in params:
+                pb_name = None
+
+        if not pb_name:
+            skipped += 1
+            continue
+
+        # Handle boolean params (active toggles)
+        if field == "active":
+            current = _read_param(plugin, pb_name)
+            new_val = delta > 0  # positive = activate, negative = deactivate
+            if current != new_val:
+                try:
+                    setattr(plugin, pb_name, new_val)
+                    applied += 1
+                    changes.append(f"{canonical_param}: {'on' if new_val else 'off'}")
+                except Exception:
+                    skipped += 1
+            continue
+
+        # Read current value in 0-1 space
+        mn, mx = _get_param_range(plugin, pb_name)
+        current_raw = _read_param(plugin, pb_name)
+        if current_raw is None:
+            skipped += 1
+            continue
+        current_norm = _normalize(float(current_raw), mn, mx)
+
+        # Apply delta and clamp
+        new_norm = max(0.0, min(1.0, current_norm + delta))
+        new_raw = _denormalize(new_norm, mn, mx)
+
+        try:
+            setattr(plugin, pb_name, new_raw)
+            applied += 1
+            changes.append(f"{canonical_param}: {current_norm:.2f} → {new_norm:.2f}")
+        except Exception:
+            skipped += 1
+
+    return {"applied": applied, "skipped": skipped, "changes": changes}

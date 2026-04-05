@@ -21,9 +21,10 @@ import gradio as gr
 from pedalboard import Pedalboard, load_plugin
 from pedalboard.io import AudioStream
 
-from neuraldsp_nlp_controller.adapter import apply
+from neuraldsp_nlp_controller.adapter import apply, apply_delta
 from neuraldsp_nlp_controller.nlp_engine import NLPEngine
 from neuraldsp_nlp_controller.preset_loader import discover_mapping, load_preset, blend_presets, list_factory_presets
+from neuraldsp_nlp_controller.refinement import is_refinement, parse_deltas
 
 # ── Configuration ────────────────────────────────────────────────────
 
@@ -176,22 +177,36 @@ def switch_plugin(plugin_name: str, input_device: str, output_device: str) -> st
 
 
 def search_tone(text: str) -> tuple[str, str]:
-    """Search for matching tones. Returns (status, results_display).
+    """Search for matching tones, or apply refinement if detected.
 
-    Does NOT auto-apply — shows top 5 for user to choose from.
+    Refinement commands ("less fizzy", "brighter") adjust the current tone.
+    New descriptions ("warm blues crunch") search the anchor database.
     """
     if state.plugin is None:
         return "No plugin loaded.", ""
     if not text.strip():
         return "Enter a tone description.", ""
 
+    # Check if this is a refinement command
+    if is_refinement(text):
+        deltas = parse_deltas(text)
+        if not deltas:
+            return f"Couldn't parse refinement: '{text}'. Try 'more/less [term]'.", ""
+        stats = apply_delta(state.plugin, deltas)
+        lines = [f"Refined: {text}"]
+        for change in stats["changes"]:
+            lines.append(f"  {change}")
+        if stats["skipped"]:
+            lines.append(f"  ({stats['skipped']} params not available on this plugin)")
+        return "\n".join(lines), ""
+
+    # New tone description — search anchors
     results = state.engine.query(text, top_k=5, plugin_name=state.plugin_name)
     state.last_results = results
 
     if not results:
         return "No matches found.", ""
 
-    # Build results display
     lines = []
     for i, r in enumerate(results):
         lines.append(f"[{i+1}] {r['preset_name']}  (score: {r['score']:.3f})")
