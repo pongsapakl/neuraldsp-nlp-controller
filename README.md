@@ -3,7 +3,7 @@
 Type your tone, hear it instantly. An NLP-powered real-time tone controller for Neural DSP Archetype guitar plugins.
 
 ```
-You: "warm Vox crunch with slapback delay"
+You: "warm crunch with delay"
 → Matches factory presets by meaning, not keywords
 → Loads the best match into your plugin
 → Guitar plays through it live
@@ -12,10 +12,10 @@ You: "warm Vox crunch with slapback delay"
 ## How It Works
 
 1. **You describe a tone** in natural language
-2. **The NLP engine** embeds your description and finds the closest matches from 462 anchors (factory presets + synthetic coverage anchors)
+2. **The NLP engine** embeds your description and finds the closest factory-preset matches (~422 anchors, all derived from your own installed presets)
 3. **The preset loader** loads the full factory preset (~170 parameters) into the Neural DSP plugin — lossless, no information lost
 4. **You play guitar** through it in real-time via audio streaming
-5. **You refine** with delta commands: "less fizzy", "brighter", "more reverb" — modifies the current tone in-place
+5. **You refine** with delta commands in a separate textbox: "less fizzy", "brighter", "more reverb" — modifies the current tone in-place
 
 ## Requirements
 
@@ -47,25 +47,25 @@ Open the Gradio URL in your browser, select your audio device and plugin, and st
 
 ## Setting Up the Anchor Database
 
-The anchor database is the core of NLP matching — it's a list of tone "anchors" (presets + semantic descriptions) that your text query gets matched against. You build it once from your own installed Neural DSP plugins.
+The anchor database is the core of NLP matching — it's a list of tone "anchors" (factory presets + auto-generated descriptions) that your text query gets matched against. You build it once from your own installed Neural DSP plugins.
 
 ### Why you build it locally
 
-This project doesn't ship factory preset data — those are Neural DSP's copyrighted work. Instead, on first run you build the anchor database **from your own legally-owned preset files** on your machine. The repo only ships `data/anchors.example.yaml` containing 40 synthetic coverage anchors (no preset data).
+This project doesn't ship factory preset data — those are Neural DSP's copyrighted work. Instead, on first run you build the anchor database **from your own legally-owned preset files** on your machine.
 
 ### What the build script does
 
-`scripts/build_anchor_db.py` runs a three-step pipeline:
+`scripts/build_anchor_db.py` runs a simple pipeline:
 
 1. **Discover plugins** — looks for installed Neural DSP Archetype VST3s at `/Library/Audio/Plug-Ins/VST3/` and their factory preset dirs at `/Library/Audio/Presets/Neural DSP/`
-2. **Extract factory anchors** — for each preset file (~422 across Tim Henson X + Cory Wong X):
+2. **Extract preset anchors** — for each preset file (~422 across Tim Henson X + Cory Wong X):
    - Loads the preset into the plugin
    - Reads all ~170 raw parameters
    - Extracts canonical tone (15 normalized params) via `adapter.py`
-   - Extracts rich semantic tags ("Vox-style crunch", "modern delay", "dynamic mic punch") from raw params via `semantic_extractor.py`
-   - Combines preset name + tags into a searchable description
-3. **Add coverage anchors** — generates 40 synthetic anchors via `generate_coverage_anchors.py` covering amp archetypes, effect types, EQ shapes, and common genres (fills gaps the factory presets don't cover)
-4. **Save** to `data/anchors.yaml` (gitignored)
+   - Auto-generates an honest description from the preset name + measured canonical values
+3. **Save** to `data/anchors.yaml` (gitignored)
+
+All descriptions are derived from values the adapter actually measured — no hand-written stylistic claims ("Vox-style", "Fender-style") and no synthetic coverage anchors. V1 Clean stays close to what we can measure.
 
 ### Running it
 
@@ -77,13 +77,7 @@ Expected output:
 
 ```text
 Building anchor database from factory presets...
-Built 422 factory anchors in 480.3s
-Added 40 coverage anchors
-Total: 462 anchors in 481.1s
-
-Sample descriptions:
-  [Archetype Tim He] Arch Echo Clean Comp, Vox-style crunch, chimey, moderate gain, ...
-  ...
+Built 422 preset anchors in 480.3s
 
 Archetype Tim Henson X: 189 anchors
 Archetype Cory Wong X: 233 anchors
@@ -97,9 +91,8 @@ Takes **~8–10 minutes** (dominated by VST3 loading, not NLP). Runs once — on
 ### Verifying it worked
 
 ```bash
-# Check the file exists and has content
-wc -l data/anchors.yaml            # Should be thousands of lines
-grep -c "^- description:" data/anchors.yaml   # Should be ~462
+wc -l data/anchors.yaml                       # Thousands of lines
+grep -c "^- description:" data/anchors.yaml   # ~422
 ```
 
 Then launch the app (`uv run python app.py`) — on startup it prints `NNN anchors loaded.`
@@ -111,23 +104,24 @@ Then launch the app (`uv run python app.py`) — on startup it prints `NNN ancho
 | `No Neural DSP plugins found` | Confirm `.vst3` files exist at `/Library/Audio/Plug-Ins/VST3/Archetype *.vst3` |
 | `No factory presets found` | Confirm `.xml` preset files exist at `/Library/Audio/Presets/Neural DSP/Archetype .../` |
 | Script crashes on a specific preset | Delete the problem preset file or skip that plugin in `anchor_builder.py` → `PLUGINS` list |
-| Descriptions look thin (missing semantic tags) | Check that your plugin is listed in `semantic_extractor.py` → `_PLUGIN_SEMANTICS`; add config if not (see [docs/adding-plugins.md](docs/adding-plugins.md)) |
 | Want to rebuild from scratch | Just re-run the script — it overwrites `data/anchors.yaml` |
 
 ## Features
 
 ### Semantic Tone Matching
 
-Describe tones naturally. The engine understands concepts like "Fender-style clean", "British crunch", "ambient post-rock", "Texas blues", not just keywords.
+Describe tones naturally using measurable characteristics: gain, EQ shape, effect presence, character. The engine finds the closest presets by meaning — no keyword matching.
 
-### Stateful Refinement
+### Stateful Refinement (Separate Textbox)
 
-Build on your current tone instead of starting over:
+A dedicated refinement input (enabled after a tone is loaded) applies delta commands to your current tone:
 
 - "less fizzy" → reduces treble/presence
 - "more gain" → increases amp gain and drive
-- "add delay" → activates delay with sensible defaults
+- "add delay" → increases delay mix
 - "brighter" → boosts treble and presence
+
+Refinement is fuzzy-matched for typo tolerance — "more crhnchy" still resolves to "crunch".
 
 ### Lossless Preset Loading
 
@@ -137,17 +131,13 @@ Loads all ~170 raw parameters from factory presets — not a lossy 15-parameter 
 
 Blend multiple presets by weighted-averaging all numeric parameters. Creates tones that don't exist in any single preset.
 
-### Auto-Generated Descriptions
-
-Each factory preset gets 10-15 semantic tags auto-extracted from its raw parameters: amp character, gain staging, EQ shape, effect types, mic character, and more. No manual labeling needed.
-
 ## Architecture
 
 ```text
 User text ──→ NLP Engine ──→ Top-K matches ──→ Preset Loader ──→ VST3 Plugin ──→ Audio
                   ↑                                   ↑
-           Anchor DB (462)                     Factory presets
-           semantic embeddings                 ~170 raw params
+           Anchor DB (~422)                    Factory presets
+           honest descriptions                 ~170 raw params
 ```
 
 The system has a clean separation between NLP and DSP:
@@ -162,12 +152,9 @@ See [docs/architecture.md](docs/architecture.md) for full details.
 
 ## Adding a New Plugin
 
-The system is designed to scale. Adding a new Neural DSP Archetype plugin requires:
-
-1. ~5 lines: plugin path and preset directory
-2. ~10 lines: amp channel mapping
-3. ~30 lines: semantic config (amp types, delay types, mic types)
-4. Run one script to rebuild the anchor database
+1. ~5 lines: plugin path and preset directory in `anchor_builder.py`
+2. ~10 lines: amp channel mapping in `adapter.py`
+3. Run `scripts/build_anchor_db.py` to rebuild the anchor database
 
 See [docs/adding-plugins.md](docs/adding-plugins.md) for a step-by-step guide.
 
@@ -179,30 +166,28 @@ neuraldsp-nlp-controller/
 ├── src/neuraldsp_nlp_controller/
 │   ├── nlp_engine.py                   # Text → tone matching via embeddings
 │   ├── canonical.py                    # Canonical tone schema (15 params)
-│   ├── semantic_extractor.py           # Raw params → semantic tags
-│   ├── anchor_builder.py              # Builds anchor database
+│   ├── anchor_builder.py               # Builds anchor database
 │   ├── adapter.py                      # Canonical ↔ plugin params
-│   ├── preset_loader.py               # Raw preset parsing + loading
+│   ├── preset_loader.py                # Raw preset parsing + loading
 │   └── refinement.py                   # Delta commands ("less fizzy")
 ├── scripts/
-│   ├── build_anchor_db.py             # Rebuild anchor database
-│   └── generate_coverage_anchors.py   # Systematic coverage anchors
+│   └── build_anchor_db.py              # Rebuild anchor database
 ├── data/
-│   └── anchors.yaml                   # 462 anchor entries
+│   └── anchors.yaml                    # ~422 preset anchor entries (gitignored)
 └── docs/
-    ├── architecture.md                # System design + data flows
-    └── adding-plugins.md             # Guide: add a new plugin
+    ├── architecture.md                 # System design + data flows
+    └── adding-plugins.md               # Guide: add a new plugin
 ```
 
 ## How the NLP Works
 
-The NLP engine uses [sentence-transformers](https://www.sbert.net/) (all-MiniLM-L6-v2) to embed text descriptions into a vector space. Each factory preset gets a rich description auto-generated from its raw parameters:
+The NLP engine uses [sentence-transformers](https://www.sbert.net/) (all-MiniLM-L6-v2) to embed text descriptions into a vector space. Each factory preset gets a description auto-generated from its name + measured canonical values:
 
-> "Arch Echo Clean Comp, Vox-style crunch, chimey, British, moderate gain, modern delay, clean repeats, rhythmic delay, wide stereo delay, hall reverb, dynamic mic punch"
+> "Arch Echo Clean Comp, clean, low gain, gentle warmth, mid-forward, subtle reverb"
 
-When you type "British crunch with delay", the engine finds the closest descriptions by cosine similarity, then loads the matching preset.
+When you type "warm clean with mids", the engine finds the closest descriptions by cosine similarity, then loads the matching preset.
 
-The refinement system detects commands like "less fizzy" or "brighter" and applies targeted parameter adjustments to the current tone — no full re-search needed.
+The refinement system parses commands like "less fizzy" or "brighter" and applies targeted parameter adjustments to the current tone — no full re-search needed.
 
 ## License
 
