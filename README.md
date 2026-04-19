@@ -61,7 +61,9 @@ uv run python scripts/build_anchor_db.py
 uv run python app.py
 ```
 
-Open the Gradio URL in your browser, select your audio device and plugin, and start typing tones.
+Open http://127.0.0.1:7860 in your browser, select your audio device and plugin, and start typing tones.
+
+The UI is a precompiled React bundle served by FastAPI. To rebuild after editing `web/src/*.jsx`: `cd web && node build.mjs`.
 
 ## Setting Up the Anchor Database
 
@@ -180,7 +182,13 @@ See [docs/adding-plugins.md](docs/adding-plugins.md) for a step-by-step guide.
 
 ```text
 neuraldsp-nlp-controller/
-├── app.py                              # Gradio UI + audio streaming
+├── app.py                              # Entry point: audio streaming + main-thread loader
+├── server.py                           # FastAPI JSON API + static UI
+├── web/                                # React UI (precompiled)
+│   ├── index.html
+│   ├── src/                            # JSX source
+│   ├── static/                         # bundle.js + vendored React
+│   └── build.mjs                       # esbuild: JSX → bundle.js
 ├── src/neuraldsp_nlp_controller/
 │   ├── nlp_engine.py                   # Text → tone matching via embeddings
 │   ├── canonical.py                    # Canonical tone schema (15 params)
@@ -225,5 +233,5 @@ Built with:
 
 - [pedalboard](https://github.com/spotify/pedalboard) — VST3 plugin hosting and audio streaming
 - [sentence-transformers](https://www.sbert.net/) — text embeddings
-- [Gradio](https://gradio.app/) — UI
+- [FastAPI](https://fastapi.tiangolo.com/) + [React](https://react.dev/) — UI + JSON API
 - [Neural DSP](https://neuraldsp.com/) — the incredible Archetype plugins
