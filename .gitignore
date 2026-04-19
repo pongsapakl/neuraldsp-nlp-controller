@@ -5,6 +5,7 @@ __pycache__/
 dist/
 build/
 .DS_Store
+web/node_modules/
 
 # User-generated anchor database (regenerated from user's own Neural DSP presets)
 data/anchors.yaml
